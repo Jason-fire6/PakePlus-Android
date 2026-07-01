@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>课搭子 - 找学习搭子</title>
+    <style>
+        /* ===== 全局重置 & 基础 ===== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            background-color: #f8f9ff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+        }
+
+        /* ===== 应用容器 — Flex 布局 ===== */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            background: #f8f9ff;
+            position: relative;
+        }
+
+        /* ===== 页面容器 ===== */
+        .page-container {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #f8f9ff;
+            -webkit-overflow-scrolling: touch;
+            display: none;
+            flex-direction: column;
+        }
+
+        .page-container.active {
+            display: flex;
+        }
+
+        .page-container::-webkit-scrollbar {
+            width: 0;
+            display: none;
+        }
+
+        /* ===== 底部导航 — 固定在底部 ===== */
+        .bottom-nav {
+            flex-shrink: 0;
+            height: 68px;
+            min-height: 68px;
+            background: #fff;
+            border-top: 1px solid #f0f0f3;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.04);
+            position: relative;
+        }
+
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #8e8e93;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            padding: 4px 12px;
+            min-width: 48px;
+            transition: color 0.2s;
+            background: none;
+            border: none;
+            font-family: inherit;
+        }
+
+        .bottom-nav-item .icon {
+            font-size: 22px;
+            line-height: 1.2;
+            margin-bottom: 2px;
+        }
+
+        .bottom-nav-item .label {
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .bottom-nav-item.active {
+            color: #6c63ff;
+        }
+
+        .bottom-nav-item.active .label {
+            color: #6c63ff;
+        }
+
+        /* ===== 通用卡片 ===== */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        /* ===== 头像 ===== */
+        .avatar-circle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #6c63ff;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .avatar-circle.small {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+
+        .avatar-circle.large {
+            width: 56px;
+            height: 56px;
+            font-size: 24px;
+        }
+
+        /* ===== 消息气泡 ===== */
+        .msg-bubble {
+            max-width: 78%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+            margin-bottom: 4px;
+        }
+
+        .msg-bubble.me {
+            background: #6c63ff;
+            color: #fff;
+            border-bottom-right-radius: 4px;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .msg-bubble.other {
+            background: #fff;
+            color: #000;
+            border-bottom-left-radius: 4px;
+            align-self: flex-start;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .msg-time {
+            font-size: 10px;
+            color: #c7c7cc;
+            margin: 2px 8px 6px;
+        }
+
+        .msg-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 8px;
+        }
+
+        .msg-row.me {
+            align-items: flex-end;
+        }
+
+        .msg-row.other {
+            align-items: flex-start;
+        }
+
+        /* ===== 标签 ===== */
+        .tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 400;
+            background: rgba(108, 99, 255, 0.1);
+            color: #6c63ff;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+
+        .tag.green {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+        }
+
+        .tag.orange {
+            background: rgba(255, 149, 0, 0.1);
+            color: #ff9500;
+        }
+
+        .tag.red {
+            background: rgba(255, 59, 48, 0.1);
+            color: #ff3b30;
+        }
+
+        .tag.gray {
+            background: #f0f0f3;
+            color: #8e8e93;
+        }
+
+        /* ===== 按钮 ===== */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 24px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #6c63ff, #4a42e8);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            user-select: none;
+        }
+
+        .btn-primary:active {
+            opacity: 0.8;
+            transform: scale(0.97);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 24px;
+            border-radius: 22px;
+            background: #f0f0f3;
+            color: #8e8e93;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-secondary:active {
+            opacity: 0.7;
+        }
+
+        .btn-small {
+            padding: 6px 16px;
+            font-size: 12px;
+            border-radius: 14px;
+        }
+
+        /* ===== 输入框 ===== */
+        .input-field {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            background: #fff;
+            transition: border 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #6c63ff;
+        }
+
+        .input-field::placeholder {
+            color: #c7c7cc;
+        }
+
+        /* ===== 需求卡片 ===== */
+        .demand-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .demand-card:active {
+            transform: scale(0.99);
+        }
+
+        .demand-card .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .demand-card .title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .demand-card .status {
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            background: rgba(108, 99, 255, 0.1);
+            color: #6c63ff;
+        }
+
+        .demand-card .status.matched {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34c759;
+        }
+
+        .demand-card .meta {
+            font-size: 12px;
+            color: #8e8e93;
+            margin-top: 4px;
+        }
+
+        .demand-card .tags {
+            margin-top: 6px;
+        }
+
+        /* ===== 搭子卡片 ===== */
+        .partner-card {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            background: #fff;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .partner-card:active {
+            transform: scale(0.99);
+        }
+
+        .partner-card .info {
+            flex: 1;
+            margin-left: 12px;
+        }
+
+        .partner-card .name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .partner-card .detail {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+
+        .partner-card .rating {
+            font-size: 12px;
+            color: #ff9500;
+        }
+
+        /* ===== 消息列表 ===== */
+        .msg-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            background: #fff;
+            border-bottom: 1px solid #f0f0f3;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .msg-item:active {
+            background: #f8f8fc;
+        }
+
+        .msg-item .info {
+            flex: 1;
+            margin-left: 12px;
+            min-width: 0;
+        }
+
+        .msg-item .name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .msg-item .preview {
+            font-size: 13px;
+            color: #8e8e93;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .msg-item .time {
+            font-size: 11px;
+            color: #c7c7cc;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+
+        .msg-item .badge {
+            background: #6c63ff;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 600;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            margin-left: 6px;
+        }
+
+        /* ===== 社区帖子 ===== */
+        .post-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .post-card:active {
+            transform: scale(0.99);
+        }
+
+        .post-card .title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 4px;
+        }
+
+        .post-card .desc {
+            font-size: 13px;
+            color: #8e8e93;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-card .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 11px;
+            color: #c7c7cc;
+        }
+
+        .post-card .author {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .post-card .stats {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* ===== 星星评价 ===== */
+        .stars {
+            display: inline-flex;
+            gap: 4px;
+            font-size: 28px;
+            color: #e0e0e3;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .stars .star {
+            transition: color 0.15s;
+        }
+
+        .stars .star.active {
+            color: #ff9500;
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 9999;
+            max-width: 80%;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== 聊天输入 ===== */
+        .chat-input-area {
+            flex-shrink: 0;
+            background: #fff;
+            border-top: 1px solid #f0f0f3;
+            padding: 8px 12px;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 20px;
+            background: #f0f0f3;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            min-height: 36px;
+        }
+
+        .chat-input-area input::placeholder {
+            color: #c7c7cc;
+        }
+
+        .chat-input-area .send-btn {
+            padding: 8px 18px;
+            border-radius: 20px;
+            background: #6c63ff;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+
+        .chat-input-area .send-btn:active {
+            opacity: 0.7;
+        }
+
+        .chat-messages {
+            padding: 12px 16px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* 修复聊天页面显示问题：移除 !important，让父类控制显示 */
+        .chat-page {
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* ===== 弹窗样式 ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #fff;
+            border-radius: 20px;
+            max-width: 420px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 24px 20px 20px;
+            position: relative;
+            box-shadow: 0 4px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 24px;
+            color: #c7c7cc;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        /* ===== 手机端适配 ===== */
+        @media (max-width: 480px) {
+            .bottom-nav {
+                height: 60px;
+                min-height: 60px;
+            }
+
+            .bottom-nav-item {
+                min-width: 42px;
+                font-size: 9px;
+                padding: 2px 6px;
+            }
+
+            .bottom-nav-item .icon {
+                font-size: 20px;
+            }
+
+            .modal-content {
+                padding: 18px 14px;
+                margin: 10px;
+            }
+
+            .card {
+                padding: 12px;
+            }
+
+            .msg-bubble {
+                max-width: 88%;
+                font-size: 14px;
+            }
+
+            .stars {
+                font-size: 24px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .app-container {
+                max-width: 480px;
+                margin: 0 auto;
+                border-left: 1px solid #e8e8ec;
+                border-right: 1px solid #e8e8ec;
+                box-shadow: 0 0 30px rgba(0, 0, 0, 0.06);
+            }
+        }
+
+        /* ===== 辅助类 ===== */
+        .flex-1 {
+            flex: 1;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-8 {
+            margin-top: 8px;
+        }
+
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+
+        .gap-8 {
+            gap: 8px;
+        }
+
+        .gap-12 {
+            gap: 12px;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .sticky-header {
+            flex-shrink: 0;
+            background: #fff;
+            z-index: 20;
+        }
+
+        .page-content {
+            flex: 1;
+            padding: 12px 16px 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== Toast ===== -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ===== 应用容器 ===== -->
+    <div class="app-container" id="app">
+
+        <!-- ========== 1. 首页 ========== -->
+        <div id="page-home" class="page-container active">
+            <div class="sticky-header" style="padding:8px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f0f3;">
+                <span style="font-size:14px;font-weight:600;">9:41</span>
+                <span style="font-size:18px;font-weight:700;color:#000;">课搭子</span>
+                <span style="font-size:14px;font-weight:500;color:#8e8e93;cursor:pointer;" id="home_profile_btn">我</span>
+            </div>
+            <div class="page-content" style="padding-top:12px;">
+                <div id="home_match_card" style="background:linear-gradient(135deg,#6c63ff,#4a42e8);border-radius:16px;padding:20px 24px;margin-bottom:16px;color:#fff;cursor:pointer;">
+                    <div style="font-size:20px;font-weight:700;">📚 找学习搭子</div>
+                    <div style="font-size:12px;opacity:0.8;margin:4px 0 12px;">发布需求，匹配最佳学习伙伴</div>
+                    <div style="display:inline-block;padding:6px 20px;border-radius:9px;background:rgba(255,255,255,0.2);font-size:12px;cursor:pointer;" id="home_start_match">开始匹配 →</div>
+                </div>
+                <div style="font-size:15px;font-weight:700;color:#000;margin-bottom:8px;">我的需求</div>
+                <div id="home_demand_list" style="margin-bottom:16px;"></div>
+                <div style="font-size:15px;font-weight:700;color:#000;margin-bottom:8px;">快捷操作</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-bottom:8px;">
+                    <div id="home_quick_publish" style="background:#fff;border-radius:12px;padding:14px;text-align:center;border:1px solid #f0f0f3;cursor:pointer;">
+                        <div style="font-size:24px;">📝</div>
+                        <div style="font-size:13px;font-weight:600;color:#000;">发布需求</div>
+                        <div style="font-size:11px;color:#8e8e93;">找搭子/组队</div>
+                    </div>
+                    <div id="home_quick_community" style="background:#fff;border-radius:12px;padding:14px;text-align:center;border:1px solid #f0f0f3;cursor:pointer;">
+                        <div style="font-size:24px;">💬</div>
+                        <div style="font-size:13px;font-weight:600;color:#000;">互助交流</div>
+                        <div style="font-size:11px;color:#8e8e93;">与搭子聊天</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 2. 发布需求 ========== -->
+        <div id="page-publish" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;border-bottom:1px solid #f0f0f3;">
+                <div style="font-size:18px;font-weight:700;text-align:center;">发布需求</div>
+            </div>
+            <div class="page-content">
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e0e0e0;">
+                    <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:4px;">学习类型</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;cursor:pointer;" id="type_selector">
+                        <span style="font-size:15px;color:#000;" id="selected_type">线上自习</span>
+                        <span style="color:#c7c7cc;">▼</span>
+                    </div>
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e0e0e0;">
+                    <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:4px;">学习科目</div>
+                    <input id="subject_input" class="input-field" style="border:none;padding:6px 0;font-size:15px;" placeholder="输入科目名称，如：高等数学" autocomplete="off">
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e0e0e0;">
+                    <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:4px;">期望学习时间</div>
+                    <input id="time_input" class="input-field" style="border:none;padding:6px 0;font-size:15px;" placeholder="例如：周一、周三晚7-9点" autocomplete="off">
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #e0e0e0;">
+                    <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:8px;">个人标签（多选）</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;" id="tag_container">
+                        <span class="tag" data-tag="考研" style="background:#6c63ff;color:#fff;padding:4px 14px;cursor:pointer;">考研 ✓</span>
+                        <span class="tag" data-tag="英语" style="background:#6c63ff;color:#fff;padding:4px 14px;cursor:pointer;">英语 ✓</span>
+                        <span class="tag" data-tag="编程" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">编程</span>
+                        <span class="tag" data-tag="阅读" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">阅读</span>
+                        <span class="tag" data-tag="高数" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">高数</span>
+                        <span class="tag" data-tag="六级" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">六级</span>
+                    </div>
+                </div>
+                <button id="submit_demand" class="btn-primary" style="width:100%;padding:14px;border-radius:24px;font-size:16px;">提交需求</button>
+                <button id="demand_back_home" class="btn-secondary" style="width:100%;margin-top:10px;padding:12px;border-radius:24px;">返回首页</button>
+            </div>
+        </div>
+
+        <!-- ========== 3. 消息列表 ========== -->
+        <div id="page-messages" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;border-bottom:1px solid #f0f0f3;">
+                <div style="font-size:18px;font-weight:700;">消息</div>
+            </div>
+            <div id="message_list" style="flex:1;overflow-y:auto;padding:0 0 16px;"></div>
+        </div>
+
+        <!-- ========== 4. 个人中心 ========== -->
+        <div id="page-profile" class="page-container">
+            <div class="sticky-header" style="background:#6c63ff;padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;color:#fff;">
+                <span style="font-size:14px;font-weight:600;">9:41</span>
+                <span style="font-size:20px;cursor:pointer;">⚙️</span>
+            </div>
+            <div style="background:linear-gradient(135deg,#6c63ff,#4a42e8);padding:20px 20px 30px;text-align:center;color:#fff;flex-shrink:0;">
+                <div class="avatar-circle large" style="margin:0 auto 8px;width:72px;height:72px;font-size:32px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.3);">👤</div>
+                <div style="font-size:20px;font-weight:700;" id="profile_name_display">同学你好</div>
+                <div style="font-size:13px;opacity:0.85;" id="profile_school_display">湖南交通工程学院 · 大三</div>
+                <div style="display:inline-block;padding:2px 14px;border-radius:10px;background:rgba(255,255,255,0.2);font-size:11px;margin-top:4px;">✓ 已认证</div>
+            </div>
+            <div style="display:flex;justify-content:space-around;padding:12px 16px;background:#fff;margin:0 16px 16px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.04);flex-shrink:0;">
+                <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#000;" id="profile_demand_count">12</div><div style="font-size:11px;color:#8e8e93;">发布需求</div></div>
+                <div style="width:1px;background:#f0f0f3;"></div>
+                <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#000;" id="profile_match_count">8</div><div style="font-size:11px;color:#8e8e93;">匹配成功</div></div>
+                <div style="width:1px;background:#f0f0f3;"></div>
+                <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#000;" id="profile_rating">4.9</div><div style="font-size:11px;color:#8e8e93;">平均评分</div></div>
+            </div>
+            <div class="page-content" style="padding-top:0;">
+                <div style="font-size:14px;font-weight:600;color:#000;margin-bottom:8px;">我的服务</div>
+                <div class="card" style="cursor:pointer;" id="profile_my_demands">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">📋</span><span style="font-size:15px;font-weight:500;">我的需求</span></div>
+                        <span style="font-size:13px;color:#8e8e93;" id="profile_demand_count2">2个 ›</span>
+                    </div>
+                </div>
+                <div class="card" style="cursor:pointer;" id="profile_my_partners">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">👥</span><span style="font-size:15px;font-weight:500;">我的搭子</span></div>
+                        <span style="font-size:13px;color:#8e8e93;" id="profile_partner_count">8位 ›</span>
+                    </div>
+                </div>
+                <div class="card" style="cursor:pointer;" id="profile_my_reviews">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">⭐</span><span style="font-size:15px;font-weight:500;">我的评价</span></div>
+                        <span style="font-size:13px;color:#8e8e93;" id="profile_review_count">3条 ›</span>
+                    </div>
+                </div>
+                <div class="card" style="cursor:pointer;" id="profile_my_collections">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">❤️</span><span style="font-size:15px;font-weight:500;">我的收藏</span></div>
+                        <span style="font-size:13px;color:#8e8e93;" id="profile_collection_count">5个 ›</span>
+                    </div>
+                </div>
+                <div style="font-size:14px;font-weight:600;color:#000;margin:16px 0 8px;">其他</div>
+                <div class="card" style="cursor:pointer;" id="profile_settings">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">⚙️</span><span style="font-size:15px;font-weight:500;">设置</span></div>
+                        <span style="font-size:13px;color:#c7c7cc;">›</span>
+                    </div>
+                </div>
+                <div class="card" style="cursor:pointer;" id="profile_about">
+                    <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">ℹ️</span><span style="font-size:15px;font-weight:500;">关于我们</span></div>
+                        <span style="font-size:13px;color:#c7c7cc;">›</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 5. 互助交流 ========== -->
+        <div id="page-community" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="community_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">互助交流</span>
+                <span style="font-size:20px;cursor:pointer;">🔔</span>
+            </div>
+            <div id="community_posts" class="page-content"></div>
+        </div>
+
+        <!-- ========== 6. 聊天页面 (匹配后) ========== -->
+        <div id="page-chat" class="page-container chat-page">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="chat_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <div class="avatar-circle small" id="chat_avatar" style="margin-right:10px;">张</div>
+                <div style="flex:1;">
+                    <div style="font-size:16px;font-weight:600;color:#000;" id="chat_name">张三</div>
+                    <div style="font-size:11px;color:#34c759;">● 在线</div>
+                </div>
+                <span style="font-size:20px;color:#8e8e93;cursor:pointer;">⋯</span>
+            </div>
+            <div style="text-align:center;font-size:11px;color:#c7c7cc;padding:8px 0 4px;flex-shrink:0;">今天 14:25</div>
+            <div style="text-align:center;font-size:11px;padding:4px 16px;background:rgba(108,99,255,0.08);border-radius:14px;color:#6c63ff;margin:0 auto 10px;width:fit-content;flex-shrink:0;">你们已成功匹配，开始聊天吧</div>
+            <div id="chat_messages" class="chat-messages" style="flex:1;overflow-y:auto;padding-bottom:16px;"></div>
+            <div class="chat-input-area">
+                <input id="chat_input" type="text" placeholder="输入消息..." autocomplete="off">
+                <button id="chat_send" class="send-btn">发送</button>
+            </div>
+        </div>
+
+        <!-- ========== 7. 聊天详情 (消息列表进入) ========== -->
+        <div id="page-chat-detail" class="page-container chat-page">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="chat_detail_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <div class="avatar-circle small" id="chat_detail_avatar" style="margin-right:10px;">张</div>
+                <div style="flex:1;">
+                    <div style="font-size:16px;font-weight:600;color:#000;" id="chat_detail_name">张三</div>
+                    <div style="font-size:11px;color:#34c759;">● 在线</div>
+                </div>
+                <span style="font-size:20px;color:#8e8e93;cursor:pointer;">⋯</span>
+            </div>
+            <div id="chat_detail_messages" class="chat-messages" style="flex:1;overflow-y:auto;padding-bottom:16px;"></div>
+            <div class="chat-input-area">
+                <input id="chat_detail_input" type="text" placeholder="输入消息..." autocomplete="off">
+                <button id="chat_detail_send" class="send-btn">发送</button>
+            </div>
+        </div>
+
+        <!-- ========== 8. 匹配成功弹窗 ========== -->
+        <div id="match-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content" style="text-align:center;padding:24px 20px 20px;">
+                <div class="modal-close" id="match_close">×</div>
+                <div style="font-size:48px;margin-bottom:4px;">🎉</div>
+                <div style="font-size:22px;font-weight:700;color:#000;margin-bottom:4px;">匹配成功！</div>
+                <div style="font-size:13px;color:#8e8e93;margin-bottom:12px;">为你找到一位合适的学习搭子</div>
+                <div style="width:100%;height:1px;background:#f0f0f3;margin-bottom:14px;"></div>
+                <div id="match_partner_info" style="display:flex;align-items:center;width:100%;gap:14px;padding:10px 12px;background:#f8f9ff;border-radius:12px;margin-bottom:14px;text-align:left;">
+                    <div class="avatar-circle large" id="match_avatar" style="flex-shrink:0;">张</div>
+                    <div style="flex:1;">
+                        <div style="font-size:17px;font-weight:600;color:#000;" id="match_name">张三</div>
+                        <div style="font-size:12px;color:#8e8e93;" id="match_school">计算机科学 · 大三</div>
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:2px;flex-wrap:wrap;">
+                            <span style="font-size:11px;padding:2px 10px;border-radius:9px;background:rgba(108,99,255,0.1);color:#6c63ff;" id="match_rating">匹配度 95%</span>
+                            <span style="font-size:11px;color:#8e8e93;" id="match_tags">擅长：考研 · 英语 · 高数 · 编程</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;width:100%;">
+                    <button id="match_again" class="btn-secondary" style="flex:1;padding:10px 0;border-radius:22px;">再看看</button>
+                    <button id="match_chat" class="btn-primary" style="flex:1;padding:10px 0;border-radius:22px;">开始聊天</button>
+                </div>
+                <div style="font-size:11px;color:#c7c7cc;margin-top:8px;">点击头像查看对方详细资料</div>
+            </div>
+        </div>
+
+        <!-- ========== 9. 发布成功弹窗 ========== -->
+        <div id="publish-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content" style="text-align:center;">
+                <div style="font-size:64px;margin-bottom:6px;">🎉</div>
+                <div style="font-size:22px;font-weight:700;color:#000;">发布成功！</div>
+                <div style="font-size:13px;color:#8e8e93;margin:4px 0 16px;">系统正在为您智能匹配学习搭子</div>
+                <div style="width:100%;background:#f8f9ff;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                    <span style="color:#8e8e93;font-size:12px;">预计匹配时间</span>
+                    <span style="color:#6c63ff;font-weight:600;font-size:14px;">约 5-10 分钟</span>
+                    <span style="font-size:20px;">⏱️</span>
+                </div>
+                <div style="display:flex;gap:12px;width:100%;">
+                    <button id="publish_again" class="btn-secondary" style="flex:1;padding:10px 0;border-radius:22px;">继续发布</button>
+                    <button id="publish_view" class="btn-primary" style="flex:1;padding:10px 0;border-radius:22px;">查看需求</button>
+                </div>
+                <div style="font-size:11px;color:#c7c7cc;margin-top:8px;">匹配成功后会第一时间通知您</div>
+            </div>
+        </div>
+
+        <!-- ========== 10. 评价成功弹窗 ========== -->
+        <div id="review-success-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content" style="text-align:center;">
+                <div style="font-size:64px;margin-bottom:4px;">⭐</div>
+                <div style="font-size:22px;font-weight:700;color:#000;">评价成功！</div>
+                <div style="font-size:13px;color:#8e8e93;margin:4px 0 16px;">感谢你的评价，帮助更多同学找到好搭子</div>
+                <div style="width:100%;background:#fff8e6;border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                    <span style="color:#8e8e93;font-size:12px;">获得积分</span>
+                    <span style="color:#ff9500;font-weight:700;font-size:18px;">+10 积分</span>
+                    <span style="font-size:24px;">🎁</span>
+                </div>
+                <button id="review_success_done" class="btn-primary" style="width:100%;padding:12px;border-radius:22px;">完成</button>
+            </div>
+        </div>
+
+        <!-- ========== 11. 评价搭子 ========== -->
+        <div id="page-review" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="review_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">评价搭子</span>
+            </div>
+            <div class="page-content">
+                <div style="background:#fff;border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+                    <div class="avatar-circle large" style="background:#6c63ff;">张</div>
+                    <div><div style="font-size:17px;font-weight:600;">张三</div><div style="font-size:12px;color:#8e8e93;">计算机科学 · 大三</div><span style="font-size:11px;padding:2px 10px;border-radius:9px;background:rgba(108,99,255,0.1);color:#6c63ff;">匹配度 95%</span></div>
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
+                    <div style="font-size:15px;font-weight:600;color:#000;margin-bottom:6px;">给这位搭子打个分吧</div>
+                    <div class="stars" id="rating_stars">
+                        <span class="star" data-val="1">★</span>
+                        <span class="star" data-val="2">★</span>
+                        <span class="star" data-val="3">★</span>
+                        <span class="star" data-val="4">★</span>
+                        <span class="star" data-val="5">★</span>
+                    </div>
+                    <div style="font-size:13px;color:#ff9500;margin-top:4px;" id="rating_text">5星 · 非常满意</div>
+                </div>
+                <div style="font-size:14px;font-weight:600;color:#000;margin-bottom:8px;">快捷评价</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;" id="quick_review_tags">
+                    <span class="tag" data-tag="学习认真" style="background:rgba(108,99,255,0.1);color:#6c63ff;padding:4px 14px;cursor:pointer;">学习认真 ✓</span>
+                    <span class="tag" data-tag="准时" style="background:rgba(108,99,255,0.1);color:#6c63ff;padding:4px 14px;cursor:pointer;">准时 ✓</span>
+                    <span class="tag" data-tag="乐于助人" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">乐于助人</span>
+                    <span class="tag" data-tag="讲解清晰" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">讲解清晰</span>
+                    <span class="tag" data-tag="有耐心" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">有耐心</span>
+                    <span class="tag" data-tag="效率高" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">效率高</span>
+                </div>
+                <div style="font-size:14px;font-weight:600;color:#000;margin-bottom:6px;">写下你的评价</div>
+                <textarea id="review_text" style="width:100%;height:80px;border:1px solid #f0f0f3;border-radius:12px;padding:12px;font-size:14px;font-family:inherit;resize:none;outline:none;" placeholder="分享一下你们的学习体验吧..."></textarea>
+                <div style="text-align:right;font-size:11px;color:#c7c7cc;margin-bottom:12px;"><span id="review_char_count">0</span>/200</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                    <input type="checkbox" id="review_anonymous" style="width:16px;height:16px;accent-color:#6c63ff;">
+                    <label for="review_anonymous" style="font-size:13px;color:#8e8e93;">匿名评价（对方看不到你的身份）</label>
+                </div>
+                <button id="submit_review" class="btn-primary" style="width:100%;padding:14px;border-radius:24px;">提交评价</button>
+                <button id="review_back_home" class="btn-secondary" style="width:100%;margin-top:10px;padding:12px;border-radius:24px;">返回首页</button>
+            </div>
+        </div>
+
+        <!-- ========== 12. 我的需求 ========== -->
+        <div id="page-demands" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="demand_list_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">我的需求</span>
+            </div>
+            <div id="demand_list_container" class="page-content"></div>
+            <div style="flex-shrink:0;padding:12px 16px;background:#f8f9ff;border-top:1px solid #f0f0f3;">
+                <button id="demand_list_new" class="btn-primary" style="width:100%;padding:12px;border-radius:24px;">+ 发布新需求</button>
+            </div>
+        </div>
+
+        <!-- ========== 13. 修改需求 ========== -->
+        <div id="page-edit-demand" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="edit_demand_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">修改需求</span>
+            </div>
+            <div class="page-content">
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e0e0e0;">
+                    <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:4px;">学习类型</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;cursor:pointer;" id="edit_type_selector">
+                        <span style="font-size:15px;color:#000;" id="edit_selected_type">线上自习</span>
+                        <span style="color:#c7c7cc;">▼</span>
+                    </div>
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e0e0e0;">
+                    <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:4px;">学习科目</div>
+                    <input id="edit_subject_input" class="input-field" style="border:none;padding:6px 0;font-size:15px;" value="高等数学" autocomplete="off">
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e0e0e0;">
+                    <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:4px;">期望学习时间</div>
+                    <input id="edit_time_input" class="input-field" style="border:none;padding:6px 0;font-size:15px;" value="周一至周五晚 7-9点" autocomplete="off">
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid #e0e0e0;">
+                    <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:8px;">个人标签（多选）</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;" id="edit_tag_container">
+                        <span class="tag" data-tag="考研" style="background:#6c63ff;color:#fff;padding:4px 14px;cursor:pointer;">考研 ✓</span>
+                        <span class="tag" data-tag="英语" style="background:#6c63ff;color:#fff;padding:4px 14px;cursor:pointer;">英语 ✓</span>
+                        <span class="tag" data-tag="编程" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">编程</span>
+                        <span class="tag" data-tag="阅读" style="background:#f0f0f3;color:#666;padding:4px 14px;cursor:pointer;">阅读</span>
+                    </div>
+                </div>
+                <div style="background:rgba(108,99,255,0.05);border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+                    <div style="font-size:12px;color:#6c63ff;">💡 修改提示</div>
+                    <div style="font-size:11px;color:#8e8e93;">修改后将重新匹配，已匹配的搭子会保留</div>
+                </div>
+                <button id="save_edit_demand" class="btn-primary" style="width:100%;padding:14px;border-radius:24px;">保存修改</button>
+                <button id="cancel_edit_demand" class="btn-secondary" style="width:100%;margin-top:10px;padding:12px;border-radius:24px;">取消修改</button>
+            </div>
+        </div>
+
+        <!-- ========== 14. 需求详情 ========== -->
+        <div id="page-demand-detail" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="demand_detail_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">需求详情</span>
+                <span style="font-size:18px;color:#8e8e93;cursor:pointer;">⋯</span>
+            </div>
+            <div class="page-content">
+                <div id="demand_detail_card" style="background:linear-gradient(135deg,#6c63ff,#4a42e8);border-radius:12px;padding:20px;color:#fff;margin-bottom:16px;">
+                    <span style="display:inline-block;padding:2px 12px;border-radius:11px;background:rgba(255,255,255,0.2);font-size:11px;margin-bottom:6px;" id="detail_status">匹配中</span>
+                    <div style="font-size:20px;font-weight:700;" id="detail_title">找考研搭子 · 高数</div>
+                    <div style="font-size:12px;opacity:0.8;" id="detail_created">发布于 2天前</div>
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:14px;font-weight:600;">匹配进度</span>
+                        <span style="font-size:14px;color:#6c63ff;font-weight:600;" id="detail_progress">45%</span>
+                    </div>
+                    <div style="width:100%;height:4px;background:#f0f0f3;border-radius:4px;overflow:hidden;">
+                        <div id="detail_progress_bar" style="width:45%;height:100%;background:linear-gradient(90deg,#6c63ff,#4a42e8);border-radius:4px;"></div>
+                    </div>
+                    <div style="font-size:11px;color:#8e8e93;margin-top:4px;">预计还需 5-10 分钟</div>
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:16px;">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:8px;">需求信息</div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f3;"><span style="color:#8e8e93;">学习类型</span><span id="detail_type">线上自习</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f3;"><span style="color:#8e8e93;">学习科目</span><span id="detail_subject">高等数学</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f3;"><span style="color:#8e8e93;">学习时间</span><span id="detail_time">周一至周五晚 7-9点</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;"><span style="color:#8e8e93;">个人标签</span><span id="detail_tags"><span class="tag">考研</span><span class="tag">英语</span></span></div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:16px;">
+                    <button id="detail_back_btn" class="btn-secondary" style="flex:1;padding:10px;border-radius:22px;">返回</button>
+                    <button id="detail_edit_btn" class="btn-primary" style="flex:1;padding:10px;border-radius:22px;">修改需求</button>
+                </div>
+                <div style="background:rgba(108,99,255,0.05);border-radius:10px;padding:12px 16px;margin-top:12px;">
+                    <div style="font-size:12px;color:#6c63ff;">💡 小提示</div>
+                    <div style="font-size:11px;color:#8e8e93;">分享给同学，一起组队学习效率更高哦</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 15. 我的搭子 ========== -->
+        <div id="page-partners" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="partners_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">我的搭子</span>
+                <span style="font-size:18px;color:#8e8e93;cursor:pointer;">⋯</span>
+            </div>
+            <div id="partners_list" class="page-content"></div>
+        </div>
+
+        <!-- ========== 16. 我的评价 ========== -->
+        <div id="page-reviews" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="reviews_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">我的评价</span>
+            </div>
+            <div id="reviews_list" class="page-content"></div>
+        </div>
+
+        <!-- ========== 17. 我的收藏 ========== -->
+        <div id="page-collections" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="collections_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">我的收藏</span>
+                <span style="font-size:18px;color:#8e8e93;cursor:pointer;">⋯</span>
+            </div>
+            <div id="collections_list" class="page-content"></div>
+        </div>
+
+        <!-- ========== 18. 设置 ========== -->
+        <div id="page-settings" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="settings_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">设置</span>
+            </div>
+            <div class="page-content">
+                <div style="font-size:13px;color:#8e8e93;margin-bottom:8px;">账号设置</div>
+                <div class="card" style="cursor:pointer;" id="setting_profile"><div style="display:flex;align-items:center;justify-content:space-between;"><span>👤 个人资料</span><span style="color:#c7c7cc;">›</span></div></div>
+                <div class="card" style="cursor:pointer;" id="setting_security"><div style="display:flex;align-items:center;justify-content:space-between;"><span>🔒 账号安全</span><span style="color:#c7c7cc;">›</span></div></div>
+                <div class="card" style="cursor:pointer;" id="setting_verify"><div style="display:flex;align-items:center;justify-content:space-between;"><span>🎓 学籍认证</span><span style="color:#34c759;font-size:12px;">已认证</span><span style="color:#c7c7cc;">›</span></div></div>
+                <div style="font-size:13px;color:#8e8e93;margin:16px 0 8px;">通知设置</div>
+                <div class="card" data-key="message"><div style="display:flex;align-items:center;justify-content:space-between;"><span>🔔 消息通知</span><span class="toggle-dot" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#34c759;cursor:pointer;"></span></div></div>
+                <div class="card" data-key="match"><div style="display:flex;align-items:center;justify-content:space-between;"><span>🤝 匹配通知</span><span class="toggle-dot" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#34c759;cursor:pointer;"></span></div></div>
+                <div class="card" data-key="chat"><div style="display:flex;align-items:center;justify-content:space-between;"><span>💬 聊天消息</span><span class="toggle-dot" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#34c759;cursor:pointer;"></span></div></div>
+                <div class="card" data-key="system"><div style="display:flex;align-items:center;justify-content:space-between;"><span>📢 系统公告</span><span class="toggle-dot" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#d1d1d6;cursor:pointer;"></span></div></div>
+            </div>
+        </div>
+
+        <!-- ========== 19. 个人资料 ========== -->
+        <div id="page-profile-edit" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="profile_edit_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">个人资料</span>
+            </div>
+            <div class="page-content" style="text-align:center;">
+                <div class="avatar-circle large" style="margin:0 auto 8px;width:80px;height:80px;font-size:36px;background:#6c63ff;">👤</div>
+                <div style="font-size:20px;font-weight:700;color:#000;" id="edit_profile_name">同学你好</div>
+                <div style="font-size:12px;color:#6c63ff;cursor:pointer;margin-bottom:12px;">📷 更换头像</div>
+                <div style="text-align:left;">
+                    <div style="font-size:13px;color:#8e8e93;margin:12px 0 4px;">基本信息</div>
+                    <div class="card" style="display:flex;justify-content:space-between;"><span>昵称</span><span id="edit_nickname">同学你好</span><span style="color:#c7c7cc;">›</span></div>
+                    <div class="card" style="display:flex;justify-content:space-between;"><span>性别</span><span id="edit_gender">女</span><span style="color:#c7c7cc;">›</span></div>
+                    <div class="card" style="display:flex;justify-content:space-between;"><span>学校</span><span id="edit_school">湖南交通工程学院</span><span style="color:#c7c7cc;">›</span></div>
+                    <div class="card" style="display:flex;justify-content:space-between;"><span>专业</span><span id="edit_major">计算机科学与技术</span><span style="color:#c7c7cc;">›</span></div>
+                    <div class="card" style="display:flex;justify-content:space-between;"><span>年级</span><span id="edit_grade">大三</span><span style="color:#c7c7cc;">›</span></div>
+                    <div style="font-size:13px;color:#8e8e93;margin:12px 0 4px;">学习标签</div>
+                    <div class="card" style="display:flex;flex-wrap:wrap;gap:6px;" id="edit_tags_display"></div>
+                    <div style="font-size:13px;color:#8e8e93;margin:12px 0 4px;">个人简介</div>
+                    <div class="card" style="display:flex;justify-content:space-between;"><span id="edit_bio">爱学习，爱生活，一起加油！💪</span><span style="color:#c7c7cc;">›</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 20. 关于我们 ========== -->
+        <div id="page-about" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="about_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">关于我们</span>
+            </div>
+            <div class="page-content" style="text-align:center;">
+                <div style="font-size:72px;margin-bottom:4px;">📚</div>
+                <div style="font-size:24px;font-weight:700;color:#000;">课搭子</div>
+                <div style="font-size:14px;color:#8e8e93;">找学习搭子，一起进步</div>
+                <div style="font-size:12px;color:#c7c7cc;margin:4px 0 20px;">版本 v1.0.0</div>
+                <div style="text-align:left;margin-bottom:16px;">
+                    <div style="font-size:15px;font-weight:600;color:#000;margin-bottom:8px;">功能特色</div>
+                    <div class="card"><div style="display:flex;gap:12px;align-items:center;"><span style="font-size:24px;">🎯</span><div><div style="font-weight:600;">智能匹配</div><div style="font-size:13px;color:#8e8e93;">根据学习需求，为你匹配最合适的学习搭子</div></div></div></div>
+                    <div class="card"><div style="display:flex;gap:12px;align-items:center;"><span style="font-size:24px;">🔒</span><div><div style="font-weight:600;">实名认证</div><div style="font-size:13px;color:#8e8e93;">校园实名认证，确保每一位用户都是真实学生</div></div></div></div>
+                    <div class="card"><div style="display:flex;gap:12px;align-items:center;"><span style="font-size:24px;">💬</span><div><div style="font-weight:600;">即时沟通</div><div style="font-size:13px;color:#8e8e93;">匹配成功后可直接聊天，快速约起学习</div></div></div></div>
+                    <div class="card"><div style="display:flex;gap:12px;align-items:center;"><span style="font-size:24px;">⭐</span><div><div style="font-weight:600;">评价体系</div><div style="font-size:13px;color:#8e8e93;">双向评价机制，帮助大家找到优质学习伙伴</div></div></div></div>
+                </div>
+                <div style="text-align:left;">
+                    <div style="font-size:15px;font-weight:600;color:#000;margin-bottom:8px;">相关协议</div>
+                    <div class="card" style="cursor:pointer;"><div style="display:flex;justify-content:space-between;"><span>用户协议</span><span style="color:#c7c7cc;">›</span></div></div>
+                    <div class="card" style="cursor:pointer;"><div style="display:flex;justify-content:space-between;"><span>隐私政策</span><span style="color:#c7c7cc;">›</span></div></div>
+                    <div class="card" style="cursor:pointer;"><div style="display:flex;justify-content:space-between;"><span>给我们评分</span><span style="color:#c7c7cc;">›</span></div></div>
+                </div>
+                <div style="font-size:11px;color:#c7c7cc;margin-top:20px;">© 2026 课搭子 版权所有</div>
+                <div style="font-size:11px;color:#c7c7cc;">Made with ❤️ for students</div>
+            </div>
+        </div>
+
+        <!-- ========== 21. 账号安全 ========== -->
+        <div id="page-security" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="security_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">账号安全</span>
+            </div>
+            <div class="page-content">
+                <div style="background:linear-gradient(135deg,#6c63ff,#4a42e8);border-radius:12px;padding:20px;color:#fff;margin-bottom:16px;">
+                    <div style="font-size:16px;font-weight:600;">🔐 安全等级：高</div>
+                    <div style="font-size:12px;opacity:0.8;">您的账号已完成所有安全设置</div>
+                </div>
+                <div style="font-size:13px;color:#8e8e93;margin-bottom:8px;">账号安全</div>
+                <div class="card" style="cursor:pointer;"><div style="display:flex;justify-content:space-between;"><span>🔑 修改密码</span><span style="color:#34c759;font-size:12px;">已设置</span><span style="color:#c7c7cc;">›</span></div></div>
+                <div class="card" style="cursor:pointer;"><div style="display:flex;justify-content:space-between;"><span>📱 手机号</span><span style="color:#8e8e93;">138****8888</span><span style="color:#c7c7cc;">›</span></div></div>
+                <div class="card" style="cursor:pointer;"><div style="display:flex;justify-content:space-between;"><span>📧 邮箱</span><span style="color:#8e8e93;">未绑定</span><span style="color:#c7c7cc;">›</span></div></div>
+                <div style="font-size:13px;color:#8e8e93;margin:16px 0 8px;">登录设置</div>
+                <div class="card" style="cursor:pointer;"><div style="display:flex;justify-content:space-between;"><span>📲 登录设备管理</span><span style="color:#8e8e93;">2个设备</span><span style="color:#c7c7cc;">›</span></div></div>
+                <div class="card"><div style="display:flex;justify-content:space-between;"><span>🔔 登录提醒</span><span style="color:#34c759;">●</span></div></div>
+                <div class="card"><div style="display:flex;justify-content:space-between;"><span>👆 指纹登录</span><span style="color:#8e8e93;">○</span></div></div>
+                <div style="background:rgba(255,149,0,0.1);border-radius:10px;padding:12px 16px;margin-top:12px;">
+                    <div style="font-size:12px;color:#ff9500;">⚠️ 温馨提示</div>
+                    <div style="font-size:11px;color:#8e8e93;">请定期修改密码，保护账号安全</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 22. 学籍认证 ========== -->
+        <div id="page-verify" class="page-container">
+            <div class="sticky-header" style="padding:12px 16px 8px;display:flex;align-items:center;border-bottom:1px solid #f0f0f3;">
+                <span id="verify_back" style="font-size:20px;color:#6c63ff;cursor:pointer;margin-right:12px;">‹</span>
+                <span style="font-size:18px;font-weight:700;flex:1;text-align:center;">学籍认证</span>
+            </div>
+            <div class="page-content">
+                <div style="background:linear-gradient(135deg,#6c63ff,#4a42e8);border-radius:12px;padding:24px;text-align:center;color:#fff;margin-bottom:16px;">
+                    <div style="font-size:48px;">✓</div>
+                    <div style="font-size:20px;font-weight:700;color:#34c759;background:rgba(52,199,89,0.2);display:inline-block;padding:2px 16px;border-radius:12px;margin:4px 0;">已认证</div>
+                    <div style="font-size:13px;opacity:0.85;margin-top:4px;">您的学籍信息已通过实名认证</div>
+                </div>
+                <div style="font-size:13px;color:#8e8e93;margin-bottom:8px;">认证信息</div>
+                <div style="background:#fff;border-radius:12px;padding:16px;">
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f3;"><span style="color:#8e8e93;">学校</span><span>湖南交通工程学院</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f3;"><span style="color:#8e8e93;">专业</span><span>计算机科学与技术</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f3;"><span style="color:#8e8e93;">年级</span><span>2023级（大三）</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f3;"><span style="color:#8e8e93;">学号</span><span>2023****1234</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;"><span style="color:#8e8e93;">认证时间</span><span>2026-06-29</span></div>
+                </div>
+                <div style="background:rgba(108,99,255,0.05);border-radius:10px;padding:12px 16px;margin-top:12px;">
+                    <div style="font-size:12px;color:#6c63ff;">💡 温馨提示</div>
+                    <div style="font-size:11px;color:#8e8e93;">如需修改信息，请联系客服处理</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 23. 底部导航 ========== -->
+        <div class="bottom-nav">
+            <button class="bottom-nav-item active" data-page="page-home">
+                <span class="icon">🏠</span>
+                <span class="label">首页</span>
+            </button>
+            <button class="bottom-nav-item" data-page="page-publish">
+                <span class="icon">📋</span>
+                <span class="label">发布</span>
+            </button>
+            <button class="bottom-nav-item" data-page="page-messages">
+                <span class="icon">💬</span>
+                <span class="label">消息</span>
+            </button>
+            <button class="bottom-nav-item" data-page="page-profile">
+                <span class="icon">👤</span>
+                <span class="label">我的</span>
+            </button>
+        </div>
+
+    </div><!-- end app-container -->
+
+    <script>
+        // ================================================================
+        // 1. 数据模型
+        // ================================================================
+        const App = {
+            user: {
+                name: '同学你好',
+                gender: '女',
+                school: '湖南交通工程学院',
+                major: '计算机科学与技术',
+                grade: '大三',
+                avatar: '👤',
+                tags: ['考研', '英语', '高数', '编程'],
+                bio: '爱学习，爱生活，一起加油！💪',
+                isVerified: true,
+                rating: 4.9,
+                matchCount: 8,
+                demandCount: 2,
+                reviewCount: 3,
+                collectionCount: 5
+            },
+
+            notificationSettings: { message: true, match: true, chat: true, system: false },
+
+            demands: [{
+                id: 1,
+                title: '找考研搭子 · 高数',
+                type: '线上自习',
+                subject: '高等数学',
+                time: '周一至周五晚 7-9点',
+                tags: ['考研', '英语'],
+                status: '匹配中',
+                createdAt: '2天前',
+                matched: []
+            }, {
+                id: 2,
+                title: '英语六级刷题搭子',
+                type: '线下自习',
+                subject: '英语六级',
+                time: '周末下午 2-5点',
+                tags: ['六级'],
+                status: '已匹配',
+                createdAt: '5天前',
+                matched: ['李同学', '王小明']
+            }],
+
+            messages: [
+                { id: 1, name: '张三', avatar: '张', preview: '好啊，我正要复习线代', time: '刚刚', unreadCount: 11, chatId: 'zhangsan' },
+                { id: 2, name: '系统通知', avatar: '📢', preview: '您的匹配需求有新进展，点击查看', time: '10:30', unreadCount: 0,
+                    chatId: 'system' },
+                { id: 3, name: '李同学', avatar: '李', preview: '明天图书馆见，记得带高数书哦', time: '昨天', unreadCount: 0,
+                    chatId: 'litongxue' },
+                { id: 4, name: '王小明', avatar: '王', preview: '英语六级一起刷题吗？', time: '周一', unreadCount: 0,
+                    chatId: 'wangxiaoming' },
+                { id: 5, name: '考研互助群', avatar: '👥', preview: '张学长：政治大题答题技巧分享', time: '上周', unreadCount: 0,
+                    chatId: 'group' },
+                { id: 6, name: '课搭子客服', avatar: '💁', preview: '感谢您的反馈，问题已解决', time: '6/20', unreadCount: 0,
+                    chatId: 'service' }
+            ],
+
+            chats: {
+                zhangsan: [
+                    { from: 'me', content: '你好！今天准备学什么？', time: '14:30' },
+                    { from: 'other', content: '准备刷高数题，一起吗？', time: '14:32' },
+                    { from: 'me', content: '好啊，我正要复习线代', time: '14:33' },
+                    { from: 'other', content: '好的！那先加群吧', time: '14:35' },
+                    { from: 'other', content: '收到！晚上7点图书馆见', time: '15:05' }
+                ],
+                litongxue: [
+                    { from: 'other', content: '明天图书馆见，记得带高数书哦', time: '昨天' },
+                    { from: 'me', content: '好的，没问题！', time: '昨天' }
+                ],
+                wangxiaoming: [
+                    { from: 'other', content: '英语六级一起刷题吗？', time: '周一' },
+                    { from: 'me', content: '好啊，什么时候？', time: '周一' }
+                ],
+                system: [{ from: 'system', content: '您的匹配需求有新进展，点击查看', time: '10:30' }],
+                group: [{ from: 'other', content: '张学长：政治大题答题技巧分享', time: '上周' }],
+                service: [{ from: 'other', content: '感谢您的反馈，问题已解决', time: '6/20' }]
+            },
+
+            partners: [
+                { name: '张三', avatar: '张', school: '计算机科学 · 大三', tags: ['考研', '英语'], rating: 4.9, lastActive: '刚刚' },
+                { name: '李同学', avatar: '李', school: '土木工程 · 大二', tags: ['六级', '高数'], rating: 4.8, lastActive: '昨天' },
+                { name: '王小明', avatar: '王', school: '软件工程 · 大三', tags: ['编程', 'Python'], rating: 5.0, lastActive: '周一' },
+                { name: '小刘', avatar: '刘', school: '机械工程 · 大四', tags: ['考研', '政治'], rating: 4.7, lastActive: '上周' }
+            ],
+
+            collections: [
+                { name: '张三', avatar: '张', school: '计算机科学 · 大三', tags: ['考研', '英语'], time: '2天前' },
+                { name: '李同学', avatar: '李', school: '土木工程 · 大二', tags: ['六级', '高数'], time: '5天前' },
+                { name: '王小明', avatar: '王', school: '软件工程 · 大三', tags: ['编程', 'Python'], time: '1周前' },
+                { name: '小刘', avatar: '刘', school: '机械工程 · 大四', tags: ['考研', '政治'], time: '2周前' },
+                { name: '小陈', avatar: '陈', school: '电气工程 · 大三', tags: ['电路', '模电'], time: '3周前' }
+            ],
+
+            reviews: [
+                { from: '张三', avatar: '张', content: '非常棒的学习搭子，高数讲得很清楚，一起学习效率很高！', rating: 5, tags: ['学习认真', '准时',
+                        '讲解清晰'
+                    ], time: '2天前' },
+                { from: '李同学', avatar: '李', content: '人很好，英语六级备考帮了我很多，推荐！', rating: 5, tags: ['有耐心', '乐于助人'],
+                    time: '5天前' },
+                { from: '王小明', avatar: '王', content: 'Python学习很有收获，就是偶尔会迟到几分钟~', rating: 4, tags: ['效率高', '氛围好'],
+                    time: '1周前' }
+            ],
+
+            posts: [{
+                id: 1,
+                title: '高数极限题怎么做？求大佬解答',
+                desc: '这道极限题想了很久都不会，有没有人能讲一下解题思路...',
+                content: '这道题是典型的 0/0 型极限，可以用洛必达法则或者等价无穷小替换。我把具体步骤写在下面了，大家一起讨论。',
+                replies: [
+                    { author: '李同学', avatar: '李', content: '用泰勒展开更简单吧？', time: '1小时前' },
+                    { author: '王小明', avatar: '王', content: '我算出来是 1/2，对吗？', time: '30分钟前' }
+                ],
+                author: '张三',
+                avatar: '张',
+                tag: '提问',
+                category: '高数',
+                time: '2小时前',
+                comments: 12,
+                likes: 8
+            }, {
+                id: 2,
+                title: '六级备考经验分享，亲测有效！',
+                desc: '备考三个月，从425分到580分，分享一下我的学习方法和...',
+                content: '我从听力、阅读、写作、翻译四个方面分别制定了计划。听力每天精听一篇真题，阅读坚持做长难句分析，写作整理了万能模板，翻译注重常用句式积累。最重要的是坚持每天背单词！',
+                replies: [
+                    { author: '小刘', avatar: '刘', content: '太厉害了！我考了三次才过，求详细方法！', time: '昨天' },
+                    { author: '王小明', avatar: '王', content: '请问听力怎么练？我总跟不上', time: '昨天' },
+                    { author: '李同学', avatar: '李', content: '回复王小明：可以试试倍速播放，先慢后快', time: '23小时前' }
+                ],
+                author: '李同学',
+                avatar: '李',
+                tag: '分享',
+                category: '英语六级',
+                time: '昨天',
+                comments: 36,
+                likes: 128
+            }, {
+                id: 3,
+                title: '考研选学校还是选专业？大家怎么看',
+                desc: '马上要报名了，好纠结啊，学校重要还是专业重要？想听听...',
+                content: '我本科是双非，想考985，但专业是热门计算机，竞争很大。如果选本校又心有不甘。大家觉得应该优先学校牌子还是优先专业方向？求给建议！',
+                replies: [
+                    { author: '张三', avatar: '张', content: '个人觉得专业更重要，毕竟以后靠技术吃饭', time: '3天前' },
+                    { author: '小刘', avatar: '刘', content: '如果学校差距不大，选专业；如果学校档次差很多，选学校', time: '2天前' },
+                    { author: '李同学', avatar: '李', content: '看你的职业规划，想进体制就选学校，想进互联网就选专业', time: '2天前' }
+                ],
+                author: '王小明',
+                avatar: '王',
+                tag: '讨论',
+                category: '考研',
+                time: '3天前',
+                comments: 56,
+                likes: 42
+            }, {
+                id: 4,
+                title: 'Python学习资料整理，免费分享！',
+                desc: '整理了一份Python从入门到进阶的学习资料，包含视频教程...',
+                content: '资料包括：廖雪峰Python教程、黑马程序员全套视频、LeetCode刷题笔记、以及我整理的100个常用库清单。链接在评论区，大家可以自取！',
+                replies: [
+                    { author: '王小明', avatar: '王', content: '感谢分享！已收藏', time: '1周前' },
+                    { author: '张三', avatar: '张', content: '请问有数据科学方向的资料吗？', time: '6天前' },
+                    { author: '小刘', avatar: '刘', content: '回复张三：有的，我再单独整理一份', time: '6天前' }
+                ],
+                author: '小刘',
+                avatar: '刘',
+                tag: '资料',
+                category: '编程',
+                time: '1周前',
+                comments: 23,
+                likes: 89
+            }],
+
+            currentPage: 'page-home',
+            currentChatId: 'zhangsan',
+            selectedRating: 5,
+            _editingDemandId: null,
+
+            // ===== 导航 =====
+            navigateTo(pageId) {
+                document.querySelectorAll('.page-container').forEach(el => el.classList.remove('active'));
+                const target = document.getElementById(pageId);
+                if (target) {
+                    target.classList.add('active');
+                    target.scrollTop = 0;
+                }
+                this.currentPage = pageId;
+                document.querySelectorAll('.bottom-nav-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.page === pageId);
+                });
+                if (pageId === 'page-messages') this.renderMessageList();
+            },
+
+            showToast(msg, duration = 1800) {
+                const toast = document.getElementById('toast');
+                if (!toast) return;
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toast._timer);
+                toast._timer = setTimeout(() => toast.classList.remove('show'), duration);
+            },
+
+            toggleNotification(key) {
+                if (this.notificationSettings.hasOwnProperty(key)) {
+                    this.notificationSettings[key] = !this.notificationSettings[key];
+                    this.renderNotificationSettings();
+                    this.showToast(this.notificationSettings[key] ? '已开启' : '已关闭');
+                }
+            },
+
+            renderNotificationSettings() {
+                document.querySelectorAll('#page-settings .toggle-dot').forEach(dot => {
+                    const card = dot.closest('[data-key]');
+                    if (card) {
+                        dot.style.background = this.notificationSettings[card.dataset.key] ? '#34c759' : '#d1d1d6';
+                    }
+                });
+            },
+
+            matchPartner() {
+                const pool = [
+                    { name: '张三', avatar: '张', school: '计算机科学 · 大三', tags: '考研 · 英语 · 高数 · 编程', rating: 95 },
+                    { name: '李同学', avatar: '李', school: '土木工程 · 大二', tags: '六级 · 高数 · 物理', rating: 92 },
+                    { name: '王小明', avatar: '王', school: '软件工程 · 大三', tags: '编程 · Python · 算法', rating: 88 }
+                ];
+                const p = pool[Math.floor(Math.random() * pool.length)];
+                document.getElementById('match_avatar').textContent = p.avatar;
+                document.getElementById('match_name').textContent = p.name;
+                document.getElementById('match_school').textContent = p.school;
+                document.getElementById('match_tags').textContent = '擅长：' + p.tags;
+                document.getElementById('match_rating').textContent = '匹配度 ' + p.rating + '%';
+                document.getElementById('match-modal').style.display = 'flex';
+            },
+
+            addDemand(title, type, subject, time, tags) {
+                const newDemand = {
+                    id: this.demands.length + 1,
+                    title,
+                    type,
+                    subject,
+                    time,
+                    tags,
+                    status: '匹配中',
+                    createdAt: '刚刚',
+                    matched: []
+                };
+                this.demands.unshift(newDemand);
+                this.user.demandCount = this.demands.length;
+                this.renderHome();
+                this.renderDemandList();
+                this.renderProfile();
+            },
+
+            addReview(rating, text, tags, anonymous) {
+                const newReview = {
+                    from: anonymous ? '匿名用户' : this.user.name,
+                    avatar: anonymous ? '👤' : this.user.avatar,
+                    content: text || '很棒的学习搭子！',
+                    rating,
+                    tags,
+                    time: '刚刚'
+                };
+                this.reviews.unshift(newReview);
+                this.user.reviewCount = this.reviews.length;
+                const total = this.reviews.reduce((sum, r) => sum + r.rating, 0);
+                this.user.rating = Math.round((total / this.reviews.length) * 10) / 10;
+                this.renderReviews();
+                this.renderProfile();
+            },
+
+            removeCollection(index) {
+                this.collections.splice(index, 1);
+                this.user.collectionCount = this.collections.length;
+                this.renderCollections();
+                this.renderProfile();
+                this.showToast('已取消收藏');
+            },
+
+            showDemandDetail(demand) {
+                this.navigateTo('page-demand-detail');
+                document.getElementById('detail_title').textContent = demand.title;
+                document.getElementById('detail_type').textContent = demand.type;
+                document.getElementById('detail_subject').textContent = demand.subject;
+                document.getElementById('detail_time').textContent = demand.time;
+                document.getElementById('detail_tags').innerHTML = demand.tags.map(t => `<span class="tag">${t}</span>`).join('');
+                document.getElementById('detail_status').textContent = demand.status;
+                document.getElementById('detail_created').textContent = '发布于 ' + demand.createdAt;
+                const progress = demand.status === '已匹配' ? 100 : Math.min(45 + Math.random() * 30, 85);
+                document.getElementById('detail_progress').textContent = Math.round(progress) + '%';
+                document.getElementById('detail_progress_bar').style.width = progress + '%';
+            },
+
+            showPostDetail(postId) {
+                const post = this.posts.find(p => p.id === postId);
+                if (!post) return;
+                const oldModal = document.getElementById('postDetailModal');
+                if (oldModal) oldModal.remove();
+                const modal = document.createElement('div');
+                modal.id = 'postDetailModal';
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+              <div class="modal-content">
+                <span class="modal-close" id="closeModalBtn">×</span>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <span class="tag ${post.tag === '提问' ? 'orange' : post.tag === '分享' ? 'green' : post.tag === '讨论' ? 'red' : ''}">${post.tag}</span>
+                  <span style="font-size:12px;color:#8e8e93;">${post.category}</span>
+                  <span style="font-size:12px;color:#c7c7cc;margin-left:auto;">${post.time}</span>
+                </div>
+                <div style="font-size:18px;font-weight:700;color:#000;margin-bottom:6px;">${post.title}</div>
+                <div style="font-size:14px;color:#1c1c1e;line-height:1.6;margin-bottom:12px;">${post.content || post.desc}</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+                  <span class="avatar-circle small" style="width:24px;height:24px;font-size:10px;background:#6c63ff;">${post.avatar}</span>
+                  <span style="font-size:13px;font-weight:500;">${post.author}</span>
+                </div>
+                <div style="border-top:1px solid #f0f0f3;padding-top:12px;">
+                  <div style="font-size:14px;font-weight:600;color:#000;margin-bottom:8px;">💬 全部评论 (${post.replies?.length || 0})</div>
+                  ${(post.replies || []).map(r => `
+                    <div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f8f9ff;">
+                      <span class="avatar-circle small" style="width:20px;height:20px;font-size:8px;background:#6c63ff;">${r.avatar}</span>
+                      <div style="flex:1;">
+                        <div style="display:flex;justify-content:space-between;">
+                          <span style="font-size:13px;font-weight:500;">${r.author}</span>
+                          <span style="font-size:10px;color:#c7c7cc;">${r.time}</span>
+                        </div>
+                        <div style="font-size:13px;color:#1c1c1e;">${r.content}</div>
+                      </div>
+                    </div>
+                  `).join('') || '<div style="color:#c7c7cc;text-align:center;padding:10px;">暂无评论，快来抢沙发～</div>'}
+                </div>
+              </div>
+            `;
+                document.body.appendChild(modal);
+                document.getElementById('closeModalBtn').addEventListener('click', () => modal.remove());
+                modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+            },
+
+            // ===== 渲染函数 =====
+            renderHome() {
+                const container = document.getElementById('home_demand_list');
+                if (!container) return;
+                if (this.demands.length === 0) {
+                    container.innerHTML = '<div style="color:#c7c7cc;text-align:center;padding:20px;">暂无需求，去发布一个吧 📝</div>';
+                    return;
+                }
+                container.innerHTML = this.demands.slice(0, 2).map(d => `
+              <div class="demand-card" data-id="${d.id}">
+                <div class="header"><span class="title">${d.title}</span><span class="status">${d.status}</span></div>
+                <div class="meta">${d.type} · ${d.time}</div>
+                <div class="tags">${d.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+              </div>
+            `).join('');
+                container.querySelectorAll('.demand-card').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const demand = this.demands.find(d => d.id === parseInt(el.dataset.id));
+                        if (demand) this.showDemandDetail(demand);
+                    });
+                });
+            },
+
+            renderDemandList() {
+                const container = document.getElementById('demand_list_container');
+                if (!container) return;
+                if (this.demands.length === 0) {
+                    container.innerHTML = '<div style="color:#c7c7cc;text-align:center;padding:40px 0;">暂无需求</div>';
+                    return;
+                }
+                container.innerHTML = this.demands.map(d => `
+              <div class="demand-card" data-id="${d.id}">
+                <div class="header"><span class="title">${d.title}</span><span class="status ${d.status === '已匹配' ? 'matched' : ''}">${d.status}</span></div>
+                <div class="meta">${d.type} · ${d.time}</div>
+                <div class="tags">${d.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <button class="btn-secondary btn-small demand-edit" data-id="${d.id}">修改</button>
+                  <button class="btn-primary btn-small demand-view" data-id="${d.id}">查看</button>
+                </div>
+              </div>
+            `).join('');
+                container.querySelectorAll('.demand-view').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const demand = this.demands.find(d => d.id === parseInt(btn.dataset.id));
+                        if (demand) this.showDemandDetail(demand);
+                    });
+                });
+                container.querySelectorAll('.demand-edit').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = parseInt(btn.dataset.id);
+                        const demand = this.demands.find(d => d.id === id);
+                        if (demand) {
+                            this.navigateTo('page-edit-demand');
+                            document.getElementById('edit_selected_type').textContent = demand.type;
+                            document.getElementById('edit_subject_input').value = demand.subject;
+                            document.getElementById('edit_time_input').value = demand.time;
+                            document.querySelectorAll('#edit_tag_container .tag').forEach(tag => {
+                                const t = tag.dataset.tag;
+                                if (demand.tags.includes(t)) {
+                                    tag.style.background = '#6c63ff';
+                                    tag.style.color = '#fff';
+                                    tag.textContent = t + ' ✓';
+                                } else {
+                                    tag.style.background = '#f0f0f3';
+                                    tag.style.color = '#666';
+                                    tag.textContent = t;
+                                }
+                            });
+                            this._editingDemandId = id;
+                        }
+                    });
+                });
+            },
+
+            renderMessageList() {
+                const container = document.getElementById('message_list');
+                if (!container) return;
+                container.innerHTML = this.messages.map(m => `
+              <div class="msg-item" data-chatid="${m.chatId}">
+                <div class="avatar-circle small" style="background:${m.chatId === 'system' ? '#f0f0f3' : '#6c63ff'};color:${m.chatId === 'system' ? '#8e8e93' : '#fff'};">${m.avatar}</div>
+                <div class="info">
+                  <div class="name">${m.name} ${m.unreadCount > 0 ? `<span class="badge">${m.unreadCount}</span>` : ''}</div>
+                  <div class="preview">${m.preview}</div>
+                </div>
+                <div class="time">${m.time}</div>
+              </div>
+            `).join('');
+
+                container.querySelectorAll('.msg-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const chatId = el.dataset.chatid;
+                        if (chatId === 'system') {
+                            this.showToast('这是系统通知');
+                            return;
+                        }
+                        this.currentChatId = chatId;
+                        const msg = this.messages.find(m => m.chatId === chatId);
+                        if (msg) msg.unreadCount = 0;
+                        this.renderMessageList();
+                        this.navigateTo('page-chat-detail');
+                        document.getElementById('chat_detail_name').textContent = msg ? msg.name : '对方';
+                        document.getElementById('chat_detail_avatar').textContent = msg ? msg.avatar : '👤';
+                        const container = document.getElementById('chat_detail_messages');
+                        if (container) renderChatMessages(container, chatId);
+                    });
+                });
+            },
+
+            renderPartners() {
+                const container = document.getElementById('partners_list');
+                if (!container) return;
+                container.innerHTML = this.partners.map(p => `
+              <div class="partner-card">
+                <div class="avatar-circle" style="background:#6c63ff;">${p.avatar}</div>
+                <div class="info">
+                  <div class="name">${p.name}</div>
+                  <div class="detail">${p.school}</div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="rating">★ ${p.rating}</div>
+                  <div style="font-size:10px;color:#c7c7cc;">${p.lastActive}</div>
+                </div>
+              </div>
+            `).join('');
+            },
+
+            renderCollections() {
+                const container = document.getElementById('collections_list');
+                if (!container) return;
+                if (this.collections.length === 0) {
+                    container.innerHTML = '<div style="color:#c7c7cc;text-align:center;padding:40px 0;">暂无收藏</div>';
+                    return;
+                }
+                container.innerHTML = this.collections.map((c, index) => `
+              <div class="partner-card" style="position:relative;">
+                <div class="avatar-circle" style="background:#6c63ff;">${c.avatar}</div>
+                <div class="info">
+                  <div class="name">${c.name}</div>
+                  <div class="detail">${c.school}</div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">${c.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:11px;color:#c7c7cc;">❤️ ${c.time}</div>
+                  <button class="btn-secondary btn-small" style="margin-top:4px;padding:2px 10px;font-size:10px;border-radius:10px;" data-index="${index}">取消收藏</button>
+                </div>
+              </div>
+            `).join('');
+                container.querySelectorAll('[data-index]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const index = parseInt(btn.dataset.index);
+                        if (confirm(`确定要取消收藏「${this.collections[index].name}」吗？`)) {
+                            this.removeCollection(index);
+                        }
+                    });
+                });
+            },
+
+            renderReviews() {
+                const container = document.getElementById('reviews_list');
+                if (!container) return;
+                const total = this.reviews.reduce((sum, r) => sum + r.rating, 0);
+                const avg = this.reviews.length ? Math.round((total / this.reviews.length) * 10) / 10 : 0;
+                let html = `
+              <div style="background:linear-gradient(135deg,#6c63ff,#4a42e8);border-radius:12px;padding:20px;color:#fff;text-align:center;margin-bottom:16px;">
+                <div style="font-size:13px;opacity:0.8;">平均评分</div>
+                <div style="font-size:40px;font-weight:700;">${avg}</div>
+                <div style="font-size:12px;opacity:0.8;">共 ${this.reviews.length} 条评价</div>
+              </div>
+            `;
+                if (this.reviews.length === 0) {
+                    html += '<div style="color:#c7c7cc;text-align:center;padding:20px;">暂无评价</div>';
+                } else {
+                    this.reviews.forEach(r => {
+                        html += `
+                <div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="avatar-circle small" style="background:#6c63ff;">${r.avatar}</div>
+                    <div style="flex:1;">
+                      <div style="font-weight:600;font-size:14px;">${r.from}</div>
+                      <div style="font-size:12px;color:#ff9500;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+                    </div>
+                    <div style="font-size:11px;color:#c7c7cc;">${r.time}</div>
+                  </div>
+                  <div style="font-size:13px;color:#000;margin:6px 0 4px;">${r.content}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px;">${r.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                </div>
+              `;
+                    });
+                }
+                container.innerHTML = html;
+            },
+
+            renderCommunity() {
+                const container = document.getElementById('community_posts');
+                if (!container) return;
+                container.innerHTML = this.posts.map(p => `
+              <div class="post-card" data-id="${p.id}">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                  <span class="tag ${p.tag === '提问' ? 'orange' : p.tag === '分享' ? 'green' : p.tag === '讨论' ? 'red' : ''}">${p.tag}</span>
+                  <span style="font-size:11px;color:#c7c7cc;">· ${p.category}</span>
+                  <span style="font-size:11px;color:#c7c7cc;margin-left:auto;">${p.time}</span>
+                </div>
+                <div class="title">${p.title}</div>
+                <div class="desc">${p.desc}</div>
+                <div class="footer">
+                  <div class="author"><span class="avatar-circle small" style="width:20px;height:20px;font-size:10px;background:#6c63ff;">${p.avatar}</span>${p.author}</div>
+                  <div class="stats"><span>💬 ${p.comments}</span><span>👍 ${p.likes}</span></div>
+                </div>
+              </div>
+            `).join('');
+                container.querySelectorAll('.post-card').forEach(el => {
+                    el.addEventListener('click', () => {
+                        this.showPostDetail(parseInt(el.dataset.id));
+                    });
+                });
+            },
+
+            renderProfile() {
+                const u = this.user;
+                document.getElementById('profile_name_display').textContent = u.name;
+                document.getElementById('profile_school_display').textContent = u.school + ' · ' + u.grade;
+                document.getElementById('profile_demand_count').textContent = u.demandCount;
+                document.getElementById('profile_match_count').textContent = u.matchCount;
+                document.getElementById('profile_rating').textContent = u.rating;
+                document.getElementById('profile_demand_count2').textContent = u.demandCount + '个 ›';
+                document.getElementById('profile_partner_count').textContent = u.matchCount + '位 ›';
+                document.getElementById('profile_review_count').textContent = u.reviewCount + '条 ›';
+                document.getElementById('profile_collection_count').textContent = u.collectionCount + '个 ›';
+                document.getElementById('edit_profile_name').textContent = u.name;
+                document.getElementById('edit_nickname').textContent = u.name;
+                document.getElementById('edit_gender').textContent = u.gender;
+                document.getElementById('edit_school').textContent = u.school;
+                document.getElementById('edit_major').textContent = u.major;
+                document.getElementById('edit_grade').textContent = u.grade;
+                document.getElementById('edit_bio').textContent = u.bio;
+                const tagsContainer = document.getElementById('edit_tags_display');
+                if (tagsContainer) {
+                    tagsContainer.innerHTML = u.tags.map(t => `<span class="tag" style="background:#6c63ff;color:#fff;">${t}</span>`)
+                        .join('');
+                }
+            }
+        };
+
+        // ================================================================
+        // 2. 聊天功能独立函数
+        // ================================================================
+        function renderChatMessages(container, chatId) {
+            if (!container) return;
+            const msgs = App.chats[chatId] || [];
+            const msgInfo = App.messages.find(m => m.chatId === chatId);
+            const name = msgInfo ? msgInfo.name : '对方';
+            const avatar = msgInfo ? msgInfo.avatar : '👤';
+            container.innerHTML = msgs.map(m => `
+            <div class="msg-row ${m.from === 'me' ? 'me' : 'other'}">
+              ${m.from !== 'me' ? `
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                  <span class="avatar-circle small" style="width:24px;height:24px;font-size:12px;background:#6c63ff;">${avatar}</span>
+                  <span style="font-size:12px;font-weight:500;color:#000;">${name}</span>
+                </div>
+              ` : ''}
+              <div class="msg-bubble ${m.from === 'me' ? 'me' : 'other'}">${m.content}</div>
+              <div class="msg-time">${m.time}</div>
+            </div>
+          `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function setupChatSend(buttonId, inputId, messagesContainerId, chatIdGetter) {
+            const btn = document.getElementById(buttonId);
+            const input = document.getElementById(inputId);
+            const container = document.getElementById(messagesContainerId);
+            if (!btn || !input || !container) return;
+
+            const sendMessage = () => {
+                const chatId = typeof chatIdGetter === 'function' ? chatIdGetter() : chatIdGetter;
+                if (!chatId) return App.showToast('请先选择聊天对象');
+                const content = input.value.trim();
+                if (!content) return;
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                if (!App.chats[chatId]) App.chats[chatId] = [];
+                App.chats[chatId].push({ from: 'me', content, time });
+                input.value = '';
+
+                const msgItem = App.messages.find(m => m.chatId === chatId);
+                if (msgItem) {
+                    msgItem.preview = content;
+                    msgItem.time = '刚刚';
+                    const isChatPage = document.getElementById('page-chat').classList.contains('active') ||
+                        document.getElementById('page-chat-detail').classList.contains('active');
+                    if (!isChatPage) msgItem.unreadCount = (msgItem.unreadCount || 0) + 1;
+                    else msgItem.unreadCount = 0;
+                }
+                App.renderMessageList();
+                renderChatMessages(container, chatId);
+
+                const typingId = 'typing-' + Date.now();
+                const typingEl = document.createElement('div');
+                typingEl.id = typingId;
+                typingEl.className = 'msg-row other';
+                const avatar = msgItem ? msgItem.avatar : '👤';
+                const name = msgItem ? msgItem.name : '对方';
+                typingEl.innerHTML = `
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                <span class="avatar-circle small" style="width:24px;height:24px;font-size:12px;background:#6c63ff;">${avatar}</span>
+                <span style="font-size:12px;font-weight:500;color:#000;">${name}</span>
+              </div>
+              <div class="msg-bubble other" style="color:#8e8e93;font-style:italic;">对方正在输入...</div>
+            `;
+                container.appendChild(typingEl);
+                container.scrollTop = container.scrollHeight;
+
+                const delay = 1500 + Math.random() * 1500;
+                setTimeout(() => {
+                    const typing = document.getElementById(typingId);
+                    if (typing) typing.remove();
+                    const replies = ['好的，收到！', '明白了 👍', '没问题！', '一起加油！', '好的，晚上见', '哈哈，好的', '嗯嗯，好的呀',
+                        '谢谢啦！'
+                    ];
+                    const reply = replies[Math.floor(Math.random() * replies.length)];
+                    const replyTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    App.chats[chatId].push({ from: 'other', content: reply, time: replyTime });
+                    if (msgItem) {
+                        msgItem.preview = reply;
+                        msgItem.time = '刚刚';
+                        const isChatPage = document.getElementById('page-chat').classList.contains('active') ||
+                            document.getElementById('page-chat-detail').classList.contains('active');
+                        if (!isChatPage) msgItem.unreadCount = (msgItem.unreadCount || 0) + 1;
+                        else msgItem.unreadCount = 0;
+                    }
+                    App.renderMessageList();
+                    renderChatMessages(container, chatId);
+                    container.scrollTop = container.scrollHeight;
+                }, delay);
+            };
+
+            btn.addEventListener('click', sendMessage);
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+        }
+
+        // ================================================================
+        // 3. 初始化
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            App.navigateTo('page-home');
+            App.renderHome();
+            App.renderMessageList();
+            App.renderProfile();
+            App.renderCommunity();
+            App.renderPartners();
+            App.renderCollections();
+            App.renderReviews();
+            App.renderNotificationSettings();
+
+            // 底部导航
+            document.querySelectorAll('.bottom-nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    if (this.dataset.page) App.navigateTo(this.dataset.page);
+                });
+            });
+
+            // 首页
+            document.getElementById('home_profile_btn')?.addEventListener('click', () => App.navigateTo('page-profile'));
+            document.getElementById('home_start_match')?.addEventListener('click', () => App.matchPartner());
+            document.getElementById('home_match_card')?.addEventListener('click', () => App.matchPartner());
+            document.getElementById('home_quick_publish')?.addEventListener('click', () => App.navigateTo('page-publish'));
+            document.getElementById('home_quick_community')?.addEventListener('click', () => App.navigateTo('page-community'));
+
+            // 匹配弹窗
+            document.getElementById('match_close')?.addEventListener('click', () => {
+                document.getElementById('match-modal').style.display = 'none';
+                App.navigateTo('page-home');
+            });
+            document.getElementById('match_again')?.addEventListener('click', () => {
+                document.getElementById('match-modal').style.display = 'none';
+                App.navigateTo('page-home');
+                setTimeout(() => App.matchPartner(), 300);
+            });
+            document.getElementById('match_chat')?.addEventListener('click', () => {
+                document.getElementById('match-modal').style.display = 'none';
+                App.navigateTo('page-chat');
+                App.currentChatId = 'zhangsan';
+                const msgContainer = document.getElementById('chat_messages');
+                if (msgContainer) renderChatMessages(msgContainer, 'zhangsan');
+                const msg = App.messages.find(m => m.chatId === 'zhangsan');
+                if (msg) msg.unreadCount = 0;
+                App.renderMessageList();
+                App.showToast('开始聊天吧 💬');
+            });
+
+            // 聊天
+            document.getElementById('chat_back')?.addEventListener('click', () => App.navigateTo('page-messages'));
+            setupChatSend('chat_send', 'chat_input', 'chat_messages', 'zhangsan');
+            document.getElementById('chat_detail_back')?.addEventListener('click', () => App.navigateTo('page-messages'));
+            setupChatSend('chat_detail_send', 'chat_detail_input', 'chat_detail_messages', () => App.currentChatId ||
+                'zhangsan');
+
+            // 发布需求
+            const typeOptions = ['线上自习', '线下自习', '一对一', '小组讨论'];
+            let typeIndex = 0;
+            document.getElementById('type_selector')?.addEventListener('click', () => {
+                typeIndex = (typeIndex + 1) % typeOptions.length;
+                document.getElementById('selected_type').textContent = typeOptions[typeIndex];
+            });
+            document.querySelectorAll('#tag_container .tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const isSelected = this.style.background === 'rgb(108, 99, 255)' || this.style
+                        .background === '#6c63ff';
+                    if (isSelected) {
+                        this.style.background = '#f0f0f3';
+                        this.style.color = '#666';
+                        this.textContent = this.dataset.tag;
+                    } else {
+                        this.style.background = '#6c63ff';
+                        this.style.color = '#fff';
+                        this.textContent = this.dataset.tag + ' ✓';
+                    }
+                });
+            });
+            document.getElementById('submit_demand')?.addEventListener('click', () => {
+                const type = document.getElementById('selected_type').textContent;
+                const subject = document.getElementById('subject_input').value.trim();
+                const time = document.getElementById('time_input').value.trim();
+                const tags = [];
+                document.querySelectorAll('#tag_container .tag').forEach(tag => {
+                    if (tag.style.background === 'rgb(108, 99, 255)' || tag.style.background ===
+                        '#6c63ff') {
+                        tags.push(tag.dataset.tag);
+                    }
+                });
+                if (!subject) return App.showToast('请填写学习科目');
+                if (!time) return App.showToast('请填写期望学习时间');
+                if (tags.length === 0) return App.showToast('请至少选择一个标签');
+                App.addDemand('找' + tags.join('·') + '搭子 · ' + subject, type, subject, time, tags);
+                document.getElementById('publish-modal').style.display = 'flex';
+                App.showToast('需求发布成功！🎉');
+            });
+            document.getElementById('demand_back_home')?.addEventListener('click', () => App.navigateTo('page-home'));
+
+            // 发布成功弹窗
+            document.getElementById('publish_again')?.addEventListener('click', () => {
+                document.getElementById('publish-modal').style.display = 'none';
+                App.navigateTo('page-publish');
+            });
+            document.getElementById('publish_view')?.addEventListener('click', () => {
+                document.getElementById('publish-modal').style.display = 'none';
+                App.navigateTo('page-demands');
+            });
+
+            // 我的需求
+            document.getElementById('demand_list_back')?.addEventListener('click', () => App.navigateTo('page-profile'));
+            document.getElementById('demand_list_new')?.addEventListener('click', () => App.navigateTo('page-publish'));
+
+            // 个人中心
+            document.getElementById('profile_my_demands')?.addEventListener('click', () => App.navigateTo('page-demands'));
+            document.getElementById('profile_my_partners')?.addEventListener('click', () => App.navigateTo('page-partners'));
+            document.getElementById('profile_my_reviews')?.addEventListener('click', () => App.navigateTo('page-reviews'));
+            document.getElementById('profile_my_collections')?.addEventListener('click', () => App.navigateTo(
+                'page-collections'));
+            document.getElementById('profile_settings')?.addEventListener('click', () => App.navigateTo('page-settings'));
+            document.getElementById('profile_about')?.addEventListener('click', () => App.navigateTo('page-about'));
+
+            // 社区
+            document.getElementById('community_back')?.addEventListener('click', () => App.navigateTo('page-home'));
+
+            // 评价
+            document.querySelectorAll('#rating_stars .star').forEach(star => {
+                star.addEventListener('click', function() {
+                    const val = parseInt(this.dataset.val);
+                    App.selectedRating = val;
+                    document.querySelectorAll('#rating_stars .star').forEach(s => {
+                        s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+                    });
+                    document.getElementById('rating_text').textContent = ['', '1星 · 很差', '2星 · 较差',
+                        '3星 · 一般', '4星 · 满意', '5星 · 非常满意'
+                    ][val] || '5星 · 非常满意';
+                });
+            });
+            document.querySelectorAll('#rating_stars .star').forEach(s => { if (parseInt(s.dataset.val) <= 5) s
+                    .classList.add('active'); });
+            document.querySelectorAll('#quick_review_tags .tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const isSelected = this.style.background === 'rgb(108, 99, 255)' || this.style
+                        .background === '#6c63ff';
+                    if (isSelected) {
+                        this.style.background = '#f0f0f3';
+                        this.style.color = '#666';
+                        this.textContent = this.dataset.tag;
+                    } else {
+                        this.style.background = '#6c63ff';
+                        this.style.color = '#fff';
+                        this.textContent = this.dataset.tag + ' ✓';
+                    }
+                });
+            });
+            document.getElementById('review_text')?.addEventListener('input', function() {
+                document.getElementById('review_char_count').textContent = this.value.length;
+            });
+            document.getElementById('submit_review')?.addEventListener('click', () => {
+                const rating = App.selectedRating || 5;
+                const text = document.getElementById('review_text').value.trim();
+                const anonymous = document.getElementById('review_anonymous').checked;
+                const tags = [];
+                document.querySelectorAll('#quick_review_tags .tag').forEach(tag => {
+                    if (tag.style.background === 'rgb(108, 99, 255)' || tag.style.background ===
+                        '#6c63ff') {
+                        tags.push(tag.dataset.tag);
+                    }
+                });
+                if (!text) return App.showToast('请写下你的评价');
+                App.addReview(rating, text, tags, anonymous);
+                document.getElementById('review-success-modal').style.display = 'flex';
+                App.showToast('评价成功！⭐');
+            });
+            document.getElementById('review_back')?.addEventListener('click', () => App.navigateTo('page-profile'));
+            document.getElementById('review_back_home')?.addEventListener('click', () => App.navigateTo('page-home'));
+
+            // 评价成功
+            document.getElementById('review_success_done')?.addEventListener('click', () => {
+                document.getElementById('review-success-modal').style.display = 'none';
+                App.navigateTo('page-home');
+            });
+
+            // 修改需求
+            document.getElementById('edit_demand_back')?.addEventListener('click', () => App.navigateTo('page-demands'));
+            let editTypeIndex = 0;
+            document.getElementById('edit_type_selector')?.addEventListener('click', () => {
+                editTypeIndex = (editTypeIndex + 1) % typeOptions.length;
+                document.getElementById('edit_selected_type').textContent = typeOptions[editTypeIndex];
+            });
+            document.querySelectorAll('#edit_tag_container .tag').forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const isSelected = this.style.background === 'rgb(108, 99, 255)' || this.style
+                        .background === '#6c63ff';
+                    if (isSelected) {
+                        this.style.background = '#f0f0f3';
+                        this.style.color = '#666';
+                        this.textContent = this.dataset.tag;
+                    } else {
+                        this.style.background = '#6c63ff';
+                        this.style.color = '#fff';
+                        this.textContent = this.dataset.tag + ' ✓';
+                    }
+                });
+            });
+            document.getElementById('save_edit_demand')?.addEventListener('click', () => {
+                const type = document.getElementById('edit_selected_type').textContent;
+                const subject = document.getElementById('edit_subject_input').value.trim();
+                const time = document.getElementById('edit_time_input').value.trim();
+                const tags = [];
+                document.querySelectorAll('#edit_tag_container .tag').forEach(tag => {
+                    if (tag.style.background === 'rgb(108, 99, 255)' || tag.style.background ===
+                        '#6c63ff') {
+                        tags.push(tag.dataset.tag);
+                    }
+                });
+                if (!subject) return App.showToast('请填写学习科目');
+                if (!time) return App.showToast('请填写期望学习时间');
+                const id = App._editingDemandId || 1;
+                const demand = App.demands.find(d => d.id === id);
+                if (demand) {
+                    demand.title = '找' + tags.join('·') + '搭子 · ' + subject;
+                    demand.type = type;
+                    demand.subject = subject;
+                    demand.time = time;
+                    demand.tags = tags;
+                    demand.status = '匹配中';
+                }
+                App.renderDemandList();
+                App.renderHome();
+                App.navigateTo('page-home');
+                App.showToast('修改已保存 ✅');
+            });
+            document.getElementById('cancel_edit_demand')?.addEventListener('click', () => App.navigateTo('page-demands'));
+
+            // 需求详情
+            document.getElementById('demand_detail_back')?.addEventListener('click', () => App.navigateTo('page-demands'));
+            document.getElementById('detail_back_btn')?.addEventListener('click', () => App.navigateTo('page-demands'));
+            document.getElementById('detail_edit_btn')?.addEventListener('click', () => App.navigateTo('page-edit-demand'));
+
+            // 我的搭子/评价/收藏
+            document.getElementById('partners_back')?.addEventListener('click', () => App.navigateTo('page-profile'));
+            document.getElementById('reviews_back')?.addEventListener('click', () => App.navigateTo('page-profile'));
+            document.getElementById('collections_back')?.addEventListener('click', () => App.navigateTo('page-profile'));
+
+            // 设置
+            document.getElementById('settings_back')?.addEventListener('click', () => App.navigateTo('page-profile'));
+            document.getElementById('setting_profile')?.addEventListener('click', () => App.navigateTo('page-profile-edit'));
+            document.getElementById('setting_security')?.addEventListener('click', () => App.navigateTo('page-security'));
+            document.getElementById('setting_verify')?.addEventListener('click', () => App.navigateTo('page-verify'));
+
+            document.getElementById('profile_edit_back')?.addEventListener('click', () => App.navigateTo('page-settings'));
+            document.getElementById('about_back')?.addEventListener('click', () => App.navigateTo('page-profile'));
+            document.getElementById('security_back')?.addEventListener('click', () => App.navigateTo('page-settings'));
+            document.getElementById('verify_back')?.addEventListener('click', () => App.navigateTo('page-settings'));
+
+            // 通知开关
+            document.querySelectorAll('#page-settings .toggle-dot').forEach(dot => {
+                dot.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const card = this.closest('[data-key]');
+                    if (card) App.toggleNotification(card.dataset.key);
+                });
+            });
+
+            console.log('✅ 课搭子 App 已启动！');
+        });
+    </script>
+
+</body>
+
+</html>
